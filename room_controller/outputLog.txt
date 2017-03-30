@@ -6,7 +6,7 @@
 4 : Output Register = 73
 5 : Output Register = 77
 6 : Output Register = 77
-7 : Output Register = 77
+7 : Output Register = 109
 8 : Output Register = 77
 9 : Output Register = 77
 10 : Output Register = 77
@@ -33,9 +33,9 @@
 31 : Output Register = 141
 32 : Output Register = 141
 33 : Output Register = 77
-34 : Output Register = 77
-35 : Output Register = 77
-36 : Output Register = 77
+34 : Output Register = 109
+35 : Output Register = 93
+36 : Output Register = 109
 37 : Output Register = 77
-38 : Output Register = 77
+38 : Output Register = 93
 39 : Output Register = 77

@@ -124,7 +124,7 @@ int main(int argc, char **argv)
 		if(inputRegister >= (0x00000001 << 23))
 			break;
 
-		printf("Imput register: %b\n", inputRegister); // debug
+		printf("Imput register: %i\n", inputRegister); // debug
 
 		// Lock : XXXX XXXX XXXX XXXX XXXX XXXX XXXX XXXI , assuming that "I" is input bit (Lock) and "X" is a don't-care bit.
 		// to extract isLocked which is the bit 0, we use a mask that is all 0 but at bit 0. Bit 0 is 1.
@@ -149,28 +149,46 @@ int main(int argc, char **argv)
 
 		// AC Selector : XXXX XXXX XXXX XXXX XXXX XXII IIII XXXX , assuming that "I" is an input bit (for AC) and "X" is a don't-care bit.
 		// bit number 4 is AC on/off switch
-		isAcOn = ((inputRegister & (1 << 4)) == 1); // Assignment
+
+		//isAcOn = ((inputRegister & (1 << 4)) == 1); // Assignment
+		isAcOn = ((inputRegister >> 4) & 1) == 1;
+
 		// bits 5 to 9 indicate desired temperature
+
 		unsigned int temperatureDesired_tmp = inputRegister >> 5; // Assignment
-		temperatureDesired_tmp &= 0x00000031;
-		printf("temperatureDesired_tmp casted to float=%f\n",(float)temperatureDesired_tmp); //for debug
+		temperatureDesired_tmp &= 0x0000001F;
+
+		//printf("temperatureDesired_tmp casted to float=%f\n",(float)temperatureDesired_tmp); //for debug
 		// According to equation 1:
+
 		temperatureDesired = ((float)temperatureDesired_tmp)*0.5 + 14.5; // Assignment
 
 		// Temperature sensor : XXXX XXXX XXXX XX IIXX XXXX XXXX , assuming that "I" is an input bit (temperature sensor) and "X" is a don't-care bit.
 		// bits 10 to 17 indicate temperature value read from sensor
 		// bits 10 to 12 are fractional part
-		unsigned int temperatureMeasured_fractional = inputRegister >> 10; // Assignment
-		temperatureMeasured_fractional &= 0x00000003; // Assignment
-		// bits 13 to 17 are decimal part
-		unsigned int temperatureMeasured_decimal = inputRegister >> 12; // Assignment
-		temperatureMeasured_decimal &= 0x00000015;
 
-		printf("Decimal: %i Fractional: %i\n", temperatureMeasured_decimal, temperatureMeasured_fractional); // Debug
+		unsigned int temperatureMeasured_fractional = inputRegister >> 10; // Assignment
+		temperatureMeasured_fractional &= 0x00000007; // Assignment
+
+		// bits 13 to 17 are decimal part
+
+		unsigned int temperatureMeasured_decimal = inputRegister >> 13; // Assignment
+		temperatureMeasured_decimal &= 0x0000001F;
+
+		//printf("Decimal: %i Fractional: %i\n", temperatureMeasured_decimal, temperatureMeasured_fractional); // Debug
 		// According to equation 2:
 			// Assignment
 			// Assignment
-		temperatureMeasured = (float)(temperatureMeasured_decimal + (temperatureMeasured_fractional*0.2)); // Assignment
+
+		if (temperatureMeasured_decimal == 0x0000001F)
+		{
+				if (temperatureMeasured_fractional == 0x00000007)
+					temperatureMeasured = 31;
+				else
+					temperatureMeasured = -1;
+		} else
+			temperatureMeasured = (float)(temperatureMeasured_decimal + (temperatureMeasured_fractional*0.2)); // Assignment
+
 			// Assignment
 			// Assignment
 
@@ -216,14 +234,14 @@ int main(int argc, char **argv)
 
 		// fan control
 		// according tables given in the manual
-		if(fanSpeedSelector == 0x0) // full speed
-			fanSpeed = 0x3; // Assignment
-		else if (fanSpeedSelector == 0x5) // medium speed
-			fanSpeed = 0x2; // Assignment
-		else if (fanSpeedSelector == 0x3) // low speed
-			fanSpeed = 0x1; // Assignment
+		if(fanSpeedSelector == 0x00000000) // full speed
+			fanSpeed = 0x00000003; // Assignment
+		else if (fanSpeedSelector == 0x00000005) // medium speed
+			fanSpeed = 0x00000002; // Assignment
+		else if (fanSpeedSelector == 0x00000003) // low speed
+			fanSpeed = 0x00000001; // Assignment
 		else // off
-			fanSpeed = 0x0; // Assignment
+			fanSpeed = 0x00000000; // Assignment
 
 		// temperature and AC control
 		if (isAcOn)
@@ -234,7 +252,7 @@ int main(int argc, char **argv)
 				isHeaterOn = false;
 			}
 
-			if((temperatureMeasured - temperatureDesired) < Hysteresis_Heater)
+			if(temperatureMeasured < temperatureDesired - Hysteresis_Heater)
 			{
 				isCoolerOn = false;
 				isHeaterOn = true;
